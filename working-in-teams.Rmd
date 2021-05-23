@@ -1,0 +1,166 @@
+---
+title: "Working in Teams and Organizing Code"
+author: "Ezra Tucker"
+date: "2021-05-27"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+# Working in Teams and Organizing Code
+
+## Outline
+
+1. Framing the Problem
+2. Solution using S4 OOP system
+
+<!-- The problem is:
+- sometimes the way that we do collaboration is poor
+- collaboration means working with other people - but also means working with
+  yourself; specifically your future self.
+  - what were you thinking when you wrote this? your future self asks
+  - also, how do I modify what was already there to tackle a new problem or altered
+    set of requirements?
+-->
+
+# Framing the Problem
+
+## What's wrong with this picture?
+```{r itshard, echo = TRUE, eval = FALSE}
+data <- readr::read_csv("~/Documents/some_folder/mydata.csv")
+```
+<!--
+If you sent me a script that contained that, I'd ask
+- Did you send me the data?
+- what if I don't have readr installed?
+- What if my folder structure is different from yours?
+- What if my OPERATING SYSTEM is different from yours?
+
+This is super common! 
+-->
+
+## Part of the point of data science
+
+It MUST be repeatable!
+<!--
+Good science = repeatable
+Good data science = good science = good programming = also repeatable
+ie, if you visited a website, written by a programmer, it worked yesterday
+but it doesn't work today, you'd be upset right? They write things in a way that makes that not happen.
+YOU are a programmer- you're typing things into a computer using a programming language.
+so let's think like programmers!
+-->
+
+## How does a programmer think?
+
+Web developers, game developers, etc.
+
+- Stability (it doesn't crash or yield a ton of errors)
+- Every user has the same polished experience
+
+<!--
+We're programmers too-
+Web developers write code to create websites (JavaScript, TypeScript, python etc)
+App developers write code to create phone apps (Obj-C, Swift, Java)
+Game developers write code to create games (C++, etc)
+And we write code to create analyses (R, python)
+-->
+
+## But how might we think?
+
+Our goals are
+
+- Answer questions
+- Run analyses
+- Wanting to make some graph that explains data
+- Creating the "best" models to fit whatever situation
+
+## And what's wrong with that?
+
+- Do I get the same results as you?
+- Do YOU get the same results as you? 
+- Can I check your work?
+
+### If not, I can't even work with you!
+
+<!-- Why not? We're not speaking the same language.
+And if you can't repeat what you got before, it's kind of useless.
+
+
+-->
+
+## Goals of working together
+
+- work is additive and complementary
+- work is never duplicated (DRY)
+- always get the same results even if some code changed
+  - or, if the results changed, it was intentional and well known for what reason
+
+
+
+How to work together: framing a solution
+========================================
+
+## So how do we work together?
+
+- Documentation and comments - but that's not nearly enough!
+- Collaboration tools (git/svn, but not talking about that)
+- Agree on conventions <!-- Like file paths -->
+- Consistent coding style
+  - I have to understand your work, you have to understand mine
+  - Programming isn't just about telling a computer what to do, it's about telling other humans what you *want* the computer to do
+- Encapsulation & Abstraction
+  - If project is big, I have to stop caring about every single line!
+
+<!-- Going to focus on this last issue
+
+- small project means I can read and understand everything.
+- bigger project means I just can't, and your coworkers can't.
+  - BTW one of your coworkers you have to think about? It's you! Like- future you.
+  - so even if you work "alone", you can't just program stuff that way!
+- Works for lots of small projects too- DRY
+  - DRY means don't repeat the work of other people too!
+  - might start looking like a library of common utilities that are shared within your group.
+  
+  -->
+
+## Encapsulation is:
+
+- putting procedures into functions
+- putting data into objects of classes
+
+<!--
+Repeatable, reusable blocks of code, little black boxes that take inputs and spit out outputs
+Not going to spend a huge amount of time talking about why you should use functions
+-->
+
+## Class systems in R
+
+- *S3:* "informal", think of them like tags you can put onto existing data structures so you can dispatch methods
+- *S4:* "formal" - ie, structured, so can help you organize your data
+
+### Add-ons
+
+- *RC:* Don't use - my understanding = not really maintained, most functionality = R6
+- *R6:* Use only if you're trying to do something infrastructure-y, otherwise use python
+
+### Use only one per project!
+<!--
+Sort of kidding R6. I know people who use R6 very successfully. My beef with it is that it's not really R anymore.
+- object$method() instead of method(object)- requires different syntax if object is an R6 object or if it isn't (and most things aren't)
+
+A note about some of the words I'm using:
+- data.frame is a class. a data.frame with some data in it is an object.
+- difference between function and method is harder, and to the extent it's important
+- functions can be scoped anywhere. Methods in R belong to a "generic function"- you can have lots of methods for a generic, which are just how to do that generic with different types of inputs.
+  - example: as.data.frame -- turns anything into a data.frame. how does it do this? Well it depends on the "anything"- it'll work differently for a vector, a matrix, a list, etc.
+
+- I like S3, sometimes. To me it comes down to the number of data objects you're really making. If the number is few, and what you're doing
+is just trying to create a multi-use data type with a lot of methods, S3 is for you. (xts is a good example)
+
+- I prefer S4 in a corporate environment. Your classes can define various parties or stages in your analysis. Yes it's more verbose, but it's worth it. (Matrix is a good example)
+
+
+-->
