@@ -1,5 +1,5 @@
 ---
-title: "Working in Teams and Organizing Code"
+title: "Methods for Working in Teams and Organizing Code"
 author: "Ezra Tucker"
 date: "2021-05-27"
 output: ioslides_presentation
@@ -8,8 +8,6 @@ output: ioslides_presentation
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 ```
-
-# Working in Teams and Organizing Code
 
 ## Outline
 
@@ -147,20 +145,213 @@ Not going to spend a huge amount of time talking about why you should use functi
 - *R6:* Use only if you're trying to do something infrastructure-y, otherwise use python
 
 ### Use only one per project!
-<!--
-Sort of kidding R6. I know people who use R6 very successfully. My beef with it is that it's not really R anymore.
-- object$method() instead of method(object)- requires different syntax if object is an R6 object or if it isn't (and most things aren't)
 
+## One note about R6
+
+- I know people who use R6 very successfully.
+- My beef with it is that it doesn't feel like R anymore.
+- `object$method()` vs `method(object)` different syntax
+
+<!--
 A note about some of the words I'm using:
 - data.frame is a class. a data.frame with some data in it is an object.
 - difference between function and method is harder, and to the extent it's important
-- functions can be scoped anywhere. Methods in R belong to a "generic function"- you can have lots of methods for a generic, which are just how to do that generic with different types of inputs.
+- functions can be scoped anywhere. Methods in R belong to a "generic function"- you can have lots of methods for a generic, which are just how to do that generic with different types of inputs. When you define a method it's scoped differently than any old function... but that's scope creep!
   - example: as.data.frame -- turns anything into a data.frame. how does it do this? Well it depends on the "anything"- it'll work differently for a vector, a matrix, a list, etc.
 
 - I like S3, sometimes. To me it comes down to the number of data objects you're really making. If the number is few, and what you're doing
-is just trying to create a multi-use data type with a lot of methods, S3 is for you. (xts is a good example)
+is just trying to create a SINGLE multi-use data type with a lot of methods, S3 is for you. (xts is a good example)
 
-- I prefer S4 in a corporate environment. Your classes can define various parties or stages in your analysis. Yes it's more verbose, but it's worth it. (Matrix is a good example)
+- I prefer S4 in a corporate environment. Your classes can define different elements of analysis. Yes it's more verbose, but it's worth it. (Matrix is a good example). But we'll build up our own example!
+ -->
+# Example: A Multipurpose File Reader
 
+## A basic thing you've probably done
+```{r example, echo = TRUE, eval=FALSE}
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(readr))
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(ggplot2))
+
+## just iris data set
+read_csv("/home/ezra/Documents/Data Science/working-in-teams/iris.csv") %>%
+  filter(Species == "setosa") %>%
+  ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
+```
+
+### What did I presuppose?
+<!--
+ASK FOR AUDIENCE PARTICIPATION
+- all my packages are installed
+- I'm using R version 4.1.0 or later
+- iris.csv exists and it is in a specific place
+- iris.csv is tabular, and is in fact, a csv file (not some other kind of file that's mislabeled)
+- iris.csv has at least 3 columns, "Species", "Sepal.Length", "Sepal.Width"
+
+If I give code to my coworker Alice, not going to work! why not?
+-->
+
+## So what?
+
+- How can we fix it?
+- How defensive are those fixes?
+
+### What do you mean by defensive?
+
+- Try to recover from errors
+- Fail Fast!
+- as always, DRY
+
+## Quick reorganization
+
+```{r exampleDefensive, echo = TRUE, eval = FALSE}
+input_file <- "~/Documents/Data Science/working-in-teams/iris.csv"
+if (!file.exists(input_file)) stop("Input File Doesn't exist!")
+read_csv(input_file) %>%
+  filter(Species == "setosa") %>%
+  ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
+```
+Better - this will actually yield an error if the file isn't there.
+
+## What if it's not necessarily a csv file?
+```{r exampleabstractreader, echo = TRUE, eval = FALSE}
+input_file <- "~/Documents/Data Science/working-in-teams/iris.csv"
+if (!file.exists(input_file)) stop("Input File Doesn't exist!")
+ext <- tools::file_ext(input_file)
+reader_func <- switch(
+  "csv" = readr::read_csv,
+  "xlsx" = readxl::read_xlsx,
+  stop("file format not recognized")
+)
+dat <- reader_func(input_file)
+dat %>%
+  filter(Species == "setosa") %>%
+  ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
+```
+<!-- in the real world, happens all the time.
+Users may want to use their own favorite tabular file format.
+But this still isn't great. read_csv and read_xlsx both take a file path as inputs.
+Connecting to a database might have a URI, database name, username, password, etc.
+This reader_func is defined kind of in-situ. Yeah, we could move it around, it should be part of a data layer which should be defined separately from your analysis layer.
+Why?
+I might want to use this function elsewhere to do a separate analysis, or maybe somebody else does.
+Also, what about writing to files? This doesn't help me at all!
+
+So let's just look at this reader_func, and the two lines above The "data" here is just the file path.
+Let's start with the "data", then we'll see what we can do with it
+-->
+
+## CsvFileConnection class
+
+### Define the class
+```{r CsvFileConnection, echo = TRUE}
+library(methods)  ## this is only polite.
+setClass("CsvFileConnection", slots = c(path = "character"))
+```
+<!-- I like UpperCamelCase for class names, like C++.
+You can also do inheritance here, say, you had a "FileConnection" superclass
+-->
+
+## Validity, Initializer and Constructors
+<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
+```{r validity, echo = TRUE}
+checkCsvFileConnection <- function(object) {
+  errors <- c()
+  if (!file.exists(object@path)) {
+    msg <- "Input File Doesn't exist!"
+    errors <- c(errors, msg)
+  }
+  if (toupper(tools::file_ext(object@path)) != "CSV"){
+    msg <- "File given was not a csv"
+    errors <- c(errors, msg)
+  }
+  if (length(errors) == 0) TRUE else errors
+}
+setValidity("CsvFileConnection", checkCsvFileConnection)
+```
+
+- single input
+- output = `TRUE` if validation passes, vector of errors if not
+<!--
+most of my validators start and end the same way
+What might be another useful thing to check for? Maybe, length of path == 1. Actually, I use that one a lot.
+-->
+
+## Need to define how to make a csv file connection still
+```{r constructor, echo = TRUE}
+CsvFileConnection <- function(path) {
+  new("CsvFileConnection", path = path)
+}
+```
+
+- Easy & straightforward, just use "new"
+- Constructor named the same as class
+- Don't use `new()` all over your code.
+
+## Define some methods
+``` {r openmethod, echo = TRUE}
+## setGeneric("open", function(con, ...) standardGeneric("open"))
+## setGeneric("open")
+setMethod("open", "CsvFileConnection", function(con, ...) {
+  if ("readr" %in% rownames(installed.packages())) {
+    return(readr::read_csv(con@path, ...))
+  }
+  read.csv(con@path, ...)
+})
+```
+
+- defensive! will revert back to `read.csv` if `readr` isn't installed.
+- two commented out generics, 1st if there's no definition of function, 2nd if there is but it's a non-generic function
+
+## Generic and regular functions
+
+### generic
+```{r generic-example, echo = TRUE}
+open
+```
+<!-- plot is a good example too. Specifically an S3 generic not an S4 generic, but it should still work for our purposes-->
+
+### regular
+```{r regular-example, echo = TRUE}
+sapply
+```
+
+## Testing!
+```{r testing, echo = TRUE}
+conn <- CsvFileConnection("iris.csv")
+dat <- open(conn)
+head(dat)
+```
+
+## Some errors?
+```{r errors, echo = TRUE, error = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+conn <- CsvFileConnection("notafile.csv")
+```
+
+## How should we put this all together
+
+### 1 file per class
+  1. `checkCsvFileConnection()` first
+  2. `setClass()`  - defines the class
+  3. `setValidity()`  - sets the validity
+  4. `setMethod("initialize"` - sets an initializer (we skipped)
+  5. `CsvFileConnection <- function()` - creates a constructor
+  6. Other methods - maybe getters and setters
+  7. Methods that help you do what you're trying to do (`open`)
+  
+<!-- Gives us 7 things to change, all in one file, if requirements change
+  a. Adding methods - append to sections 6 or 7
+  b. Adding or changing slots - just change part 2 (first!)
 
 -->
+## Use in place
+```{r example-in-place, echo = TRUE, eval = FALSE}
+input_file <- "~/Documents/Data Science/working-in-teams/iris.csv"
+conn <- CsvFileConnection(input_file)
+dat <- open(conn)
+dat %>%
+  filter(Species == "setosa") %>%
+  ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
+```
+
+# Questions?

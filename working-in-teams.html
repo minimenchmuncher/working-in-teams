@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Working in Teams and Organizing Code</title>
+  <title>Methods for Working in Teams and Organizing Code</title>
 
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="chrome=1">
@@ -20,7 +20,7 @@
     var SLIDE_CONFIG = {
       // Slide settings
       settings: {
-                title: 'Working in Teams and Organizing Code',
+                title: 'Methods for Working in Teams and Organizing Code',
                         useBuilds: true,
         usePrettify: true,
         enableSlideAreas: true,
@@ -96,7 +96,6 @@ slide:not(.current) .plotly.html-widget{
             pre > code.sourceCode { white-space: pre; position: relative; }
             pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
             pre > code.sourceCode > span:empty { height: 1.2em; }
-            .sourceCode { overflow: visible; }
             code.sourceCode > span { color: inherit; text-decoration: inherit; }
             div.sourceCode { margin: 1em 0; }
             pre.sourceCode { margin: 0; }
@@ -176,9 +175,7 @@ slide:not(.current) .plotly.html-widget{
           </hgroup>
   </slide>
 
-<slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Working in Teams and Organizing Code</h2></hgroup><article  id="working-in-teams-and-organizing-code">
-
-</article></slide><slide class=""><hgroup><h2>Outline</h2></hgroup><article  id="outline">
+<slide class=""><hgroup><h2>Outline</h2></hgroup><article  id="outline">
 
 <ol>
 <li>Framing the Problem</li>
@@ -338,23 +335,275 @@ Not going to spend a huge amount of time talking about why you should use functi
 
 <h3>Use only one per project!</h3>
 
-<!--
-Sort of kidding R6. I know people who use R6 very successfully. My beef with it is that it's not really R anymore.
-- object$method() instead of method(object)- requires different syntax if object is an R6 object or if it isn't (and most things aren't)
+</article></slide><slide class=""><hgroup><h2>One note about R6</h2></hgroup><article  id="one-note-about-r6">
 
+<ul>
+<li>I know people who use R6 very successfully.</li>
+<li>My beef with it is that it doesn’t feel like R anymore.</li>
+<li><code>object$method()</code> vs <code>method(object)</code> different syntax</li>
+</ul>
+
+<!--
 A note about some of the words I'm using:
 - data.frame is a class. a data.frame with some data in it is an object.
 - difference between function and method is harder, and to the extent it's important
-- functions can be scoped anywhere. Methods in R belong to a "generic function"- you can have lots of methods for a generic, which are just how to do that generic with different types of inputs.
+- functions can be scoped anywhere. Methods in R belong to a "generic function"- you can have lots of methods for a generic, which are just how to do that generic with different types of inputs. When you define a method it's scoped differently than any old function... but that's scope creep!
   - example: as.data.frame -- turns anything into a data.frame. how does it do this? Well it depends on the "anything"- it'll work differently for a vector, a matrix, a list, etc.
 
 - I like S3, sometimes. To me it comes down to the number of data objects you're really making. If the number is few, and what you're doing
-is just trying to create a multi-use data type with a lot of methods, S3 is for you. (xts is a good example)
+is just trying to create a SINGLE multi-use data type with a lot of methods, S3 is for you. (xts is a good example)
 
-- I prefer S4 in a corporate environment. Your classes can define various parties or stages in your analysis. Yes it's more verbose, but it's worth it. (Matrix is a good example)
+- I prefer S4 in a corporate environment. Your classes can define different elements of analysis. Yes it's more verbose, but it's worth it. (Matrix is a good example). But we'll build up our own example!
+ -->
 
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Example: A Multipurpose File Reader</h2></hgroup><article  id="example-a-multipurpose-file-reader">
 
---></article></slide>
+</article></slide><slide class=""><hgroup><h2>A basic thing you’ve probably done</h2></hgroup><article  id="a-basic-thing-youve-probably-done">
+
+<pre class = 'prettyprint lang-r'>suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(readr))
+suppressPackageStartupMessages(library(magrittr))
+suppressPackageStartupMessages(library(ggplot2))
+
+## just iris data set
+read_csv(&quot;/home/ezra/Documents/Data Science/working-in-teams/iris.csv&quot;) %&gt;%
+  filter(Species == &quot;setosa&quot;) %&gt;%
+  ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
+
+<h3>What did I presuppose?</h3>
+
+<!--
+ASK FOR AUDIENCE PARTICIPATION
+- all my packages are installed
+- I'm using R version 4.1.0 or later
+- iris.csv exists and it is in a specific place
+- iris.csv is tabular, and is in fact, a csv file (not some other kind of file that's mislabeled)
+- iris.csv has at least 3 columns, "Species", "Sepal.Length", "Sepal.Width"
+
+If I give code to my coworker Alice, not going to work! why not?
+-->
+
+</article></slide><slide class=""><hgroup><h2>So what?</h2></hgroup><article  id="so-what">
+
+<ul>
+<li>How can we fix it?</li>
+<li>How defensive are those fixes?</li>
+</ul>
+
+<h3>What do you mean by defensive?</h3>
+
+<ul>
+<li>Try to recover from errors</li>
+<li>Fail Fast!</li>
+<li>as always, DRY</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Quick reorganization</h2></hgroup><article  id="quick-reorganization">
+
+<pre class = 'prettyprint lang-r'>input_file &lt;- &quot;~/Documents/Data Science/working-in-teams/iris.csv&quot;
+if (!file.exists(input_file)) stop(&quot;Input File Doesn&#39;t exist!&quot;)
+read_csv(input_file) %&gt;%
+  filter(Species == &quot;setosa&quot;) %&gt;%
+  ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
+
+<p>Better - this will actually yield an error if the file isn’t there.</p>
+
+</article></slide><slide class=""><hgroup><h2>What if it’s not necessarily a csv file?</h2></hgroup><article  id="what-if-its-not-necessarily-a-csv-file">
+
+<pre class = 'prettyprint lang-r'>input_file &lt;- &quot;~/Documents/Data Science/working-in-teams/iris.csv&quot;
+if (!file.exists(input_file)) stop(&quot;Input File Doesn&#39;t exist!&quot;)
+ext &lt;- tools::file_ext(input_file)
+reader_func &lt;- switch(
+  &quot;csv&quot; = readr::read_csv,
+  &quot;xlsx&quot; = readxl::read_xlsx,
+  stop(&quot;file format not recognized&quot;)
+)
+dat &lt;- reader_func(input_file)
+dat %&gt;%
+  filter(Species == &quot;setosa&quot;) %&gt;%
+  ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
+
+<!-- in the real world, happens all the time.
+Users may want to use their own favorite tabular file format.
+But this still isn't great. read_csv and read_xlsx both take a file path as inputs.
+Connecting to a database might have a URI, database name, username, password, etc.
+This reader_func is defined kind of in-situ. Yeah, we could move it around, it should be part of a data layer which should be defined separately from your analysis layer.
+Why?
+I might want to use this function elsewhere to do a separate analysis, or maybe somebody else does.
+Also, what about writing to files? This doesn't help me at all!
+
+So let's just look at this reader_func, and the two lines above The "data" here is just the file path.
+Let's start with the "data", then we'll see what we can do with it
+-->
+
+</article></slide><slide class=""><hgroup><h2>CsvFileConnection class</h2></hgroup><article  id="csvfileconnection-class">
+
+<h3>Define the class</h3>
+
+<pre class = 'prettyprint lang-r'>library(methods)  ## this is only polite.
+setClass(&quot;CsvFileConnection&quot;, slots = c(path = &quot;character&quot;))</pre>
+
+<!-- I like UpperCamelCase for class names, like C++.
+You can also do inheritance here, say, you had a "FileConnection" superclass
+-->
+
+</article></slide><slide class=""><hgroup><h2>Validity, Initializer and Constructors</h2></hgroup><article  id="validity-initializer-and-constructors">
+
+<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
+
+<pre class = 'prettyprint lang-r'>checkCsvFileConnection &lt;- function(object) {
+  errors &lt;- c()
+  if (!file.exists(object@path)) {
+    msg &lt;- &quot;Input File Doesn&#39;t exist!&quot;
+    errors &lt;- c(errors, msg)
+  }
+  if (toupper(tools::file_ext(object@path)) != &quot;CSV&quot;){
+    msg &lt;- &quot;File given was not a csv&quot;
+    errors &lt;- c(errors, msg)
+  }
+  if (length(errors) == 0) TRUE else errors
+}
+setValidity(&quot;CsvFileConnection&quot;, checkCsvFileConnection)</pre>
+
+<pre >## Class &quot;CsvFileConnection&quot; [in &quot;.GlobalEnv&quot;]
+## 
+## Slots:
+##                 
+## Name:       path
+## Class: character</pre>
+
+<ul>
+<li>single input</li>
+<li>output = <code>TRUE</code> if validation passes, vector of errors if not <!--
+most of my validators start and end the same way
+What might be another useful thing to check for? Maybe, length of path == 1. Actually, I use that one a lot.
+--></li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Need to define how to make a csv file connection still</h2></hgroup><article  id="need-to-define-how-to-make-a-csv-file-connection-still">
+
+<pre class = 'prettyprint lang-r'>CsvFileConnection &lt;- function(path) {
+  new(&quot;CsvFileConnection&quot;, path = path)
+}</pre>
+
+<ul>
+<li>Easy &amp; straightforward, just use &ldquo;new&rdquo;</li>
+<li>Constructor named the same as class</li>
+<li>Don’t use <code>new()</code> all over your code.</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Define some methods</h2></hgroup><article  id="define-some-methods">
+
+<pre class = 'prettyprint lang-r'>## setGeneric(&quot;open&quot;, function(con, ...) standardGeneric(&quot;open&quot;))
+## setGeneric(&quot;open&quot;)
+setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
+  if (&quot;readr&quot; %in% rownames(installed.packages())) {
+    return(readr::read_csv(con@path, ...))
+  }
+  read.csv(con@path, ...)
+})</pre>
+
+<ul>
+<li>defensive! will revert back to <code>read.csv</code> if <code>readr</code> isn’t installed.</li>
+<li>two commented out generics, 1st if there’s no definition of function, 2nd if there is but it’s a non-generic function</li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Generic and regular functions</h2></hgroup><article  id="generic-and-regular-functions">
+
+<h3>generic</h3>
+
+<pre class = 'prettyprint lang-r'>open</pre>
+
+<pre >## standardGeneric for &quot;open&quot; defined from package &quot;base&quot;
+## 
+## function (con, ...) 
+## standardGeneric(&quot;open&quot;)
+## &lt;environment: 0x55b236c18120&gt;
+## Methods may be defined for arguments: con
+## Use  showMethods(open)  for currently available ones.</pre>
+
+<!-- plot is a good example too. Specifically an S3 generic not an S4 generic, but it should still work for our purposes-->
+
+<h3>regular</h3>
+
+<pre class = 'prettyprint lang-r'>sapply</pre>
+
+<pre >## function (X, FUN, ..., simplify = TRUE, USE.NAMES = TRUE) 
+## {
+##     FUN &lt;- match.fun(FUN)
+##     answer &lt;- lapply(X = X, FUN = FUN, ...)
+##     if (USE.NAMES &amp;&amp; is.character(X) &amp;&amp; is.null(names(answer))) 
+##         names(answer) &lt;- X
+##     if (!isFALSE(simplify)) 
+##         simplify2array(answer, higher = (simplify == &quot;array&quot;))
+##     else answer
+## }
+## &lt;bytecode: 0x55b235c7ee30&gt;
+## &lt;environment: namespace:base&gt;</pre>
+
+</article></slide><slide class=""><hgroup><h2>Testing!</h2></hgroup><article  id="testing">
+
+<pre class = 'prettyprint lang-r'>conn &lt;- CsvFileConnection(&quot;iris.csv&quot;)
+dat &lt;- open(conn)</pre>
+
+<pre >## 
+## ── Column specification ────────────────────────────────────────────────────────
+## cols(
+##   Sepal.Length = col_double(),
+##   Sepal.Width = col_double(),
+##   Petal.Length = col_double(),
+##   Petal.Width = col_double(),
+##   Species = col_character()
+## )</pre>
+
+<pre class = 'prettyprint lang-r'>head(dat)</pre>
+
+<pre >## # A tibble: 6 x 5
+##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+##          &lt;dbl&gt;       &lt;dbl&gt;        &lt;dbl&gt;       &lt;dbl&gt; &lt;chr&gt;  
+## 1          5.1         3.5          1.4         0.2 setosa 
+## 2          4.9         3            1.4         0.2 setosa 
+## 3          4.7         3.2          1.3         0.2 setosa 
+## 4          4.6         3.1          1.5         0.2 setosa 
+## 5          5           3.6          1.4         0.2 setosa 
+## 6          5.4         3.9          1.7         0.4 setosa</pre>
+
+</article></slide><slide class=""><hgroup><h2>Some errors?</h2></hgroup><article  id="some-errors">
+
+<pre class = 'prettyprint lang-r'>conn &lt;- CsvFileConnection(&quot;notafile.csv&quot;)</pre>
+
+<pre >## Error in validObject(.Object): invalid class &quot;CsvFileConnection&quot; object: Input File Doesn&#39;t exist!</pre>
+
+</article></slide><slide class=""><hgroup><h2>How should we put this all together</h2></hgroup><article  id="how-should-we-put-this-all-together">
+
+<h3>1 file per class</h3>
+
+<ol>
+<li><code>checkCsvFileConnection()</code> first</li>
+<li><code>setClass()</code> - defines the class</li>
+<li><code>setValidity()</code> - sets the validity</li>
+<li><code>setMethod(&quot;initialize&quot;</code> - sets an initializer (we skipped)</li>
+<li><code>CsvFileConnection &lt;- function()</code> - creates a constructor</li>
+<li>Other methods - maybe getters and setters</li>
+<li>Methods that help you do what you’re trying to do (<code>open</code>)</li>
+</ol>
+
+<!-- Gives us 7 things to change, all in one file, if requirements change
+  a. Adding methods - append to sections 6 or 7
+  b. Adding or changing slots - just change part 2 (first!)
+
+-->
+
+</article></slide><slide class=""><hgroup><h2>Use in place</h2></hgroup><article  id="use-in-place">
+
+<pre class = 'prettyprint lang-r'>input_file &lt;- &quot;~/Documents/Data Science/working-in-teams/iris.csv&quot;
+conn &lt;- CsvFileConnection(input_file)
+dat &lt;- open(conn)
+dat %&gt;%
+  filter(Species == &quot;setosa&quot;) %&gt;%
+  ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Questions?</h2></hgroup><article  id="questions"></article></slide>
 
 
   <slide class="backdrop"></slide>
