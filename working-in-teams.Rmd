@@ -1,12 +1,27 @@
 ---
 title: "Methods for Working in Teams and Organizing Code"
 author: "Ezra Tucker"
-date: "2021-05-27"
-output: ioslides_presentation
+date: '2021-05-27'
+output:
+  ioslides_presentation: default
+  slidy_presentation: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
+library(formatR)
+library(knitr)
+hook_output = knit_hooks$get('output')
+knit_hooks$set(output = function(x, options) {
+  # this hook is used only when the linewidth option is not NULL
+  if (!is.null(n <- options$linewidth)) {
+    x = knitr:::split_lines(x)
+    # any lines wider than n should be wrapped
+    if (any(nchar(x) > n)) x = strwrap(x, width = n)
+    x = paste(x, collapse = '\n')
+  }
+  hook_output(x, options)
+})
 ```
 
 ## Outline
@@ -63,10 +78,14 @@ We're programmers too-
 Web developers write code to create websites (JavaScript, TypeScript, python etc)
 App developers write code to create phone apps (Obj-C, Swift, Java)
 Game developers write code to create games (C++, etc)
-And we write code to create analyses (R, python)
+
+All of whom create layouts, content, backend storage, etc.
+
+And we write code to create analyses (R, python). And we should do the same things
+that they're doing.
 -->
 
-## But how might we think?
+## How do we (data scientists) think?
 
 Our goals are
 
@@ -116,7 +135,8 @@ How to work together: framing a solution
 
 - small project means I can read and understand everything.
 - bigger project means I just can't, and your coworkers can't.
-  - BTW one of your coworkers you have to think about? It's you! Like- future you.
+  - at some point, need to have units of code that you can trust work properly.
+  - BTW, One of your coworkers you have to think about? It's you! Like- future you.
   - so even if you work "alone", you can't just program stuff that way!
 - Works for lots of small projects too- DRY
   - DRY means don't repeat the work of other people too!
@@ -130,9 +150,26 @@ How to work together: framing a solution
 - putting data into objects of classes
 
 <!--
-Repeatable, reusable blocks of code, little black boxes that take inputs and spit out outputs
-Not going to spend a huge amount of time talking about why you should use functions
+Repeatable, reusable blocks of code, little black boxes that take inputs and spit out outputs.
+Take time to build your blocks. Then use and distibute them to your coworkers. Then everybody
+  is using the same blocks, you don't have competing sets of blocks, and the blocks you have
+  all work great.
+  
+You don't always need to know how the sausage is made - ie, every little detail about every line of code.
+  - Writing stuff as one big long script shows how the sausage gets made.
+  - Make the sausage, and then leave it be.
+Not going to spend a huge amount of time talking about functions, but I want to talk about
+classes, objects, and methods.
 -->
+
+## Quick aside about lingo
+
+- *Object:* A structured grouping of data
+- *Class:* A template for creating these objects and defining their behavior
+- *Generic:* Specific type of function whose definition depends on how it was used
+- *Method:* An implementation of a Generic for a specific class.
+
+**This is all R-Specific**
 
 ## Class systems in R
 
@@ -170,12 +207,12 @@ is just trying to create a SINGLE multi-use data type with a lot of methods, S3 
 ```{r example, echo = TRUE, eval=FALSE}
 suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(readr))
-suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ggplot2))
 
 ## just iris data set
-read_csv("/home/ezra/Documents/Data Science/working-in-teams/iris.csv") %>%
-  filter(Species == "setosa") %>%
+read_csv(file.path("/home/ezra/Documents/Data Science",
+                   "working-in-teams/iris.csv") |>
+  filter(Species == "setosa") |>
   ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
 ```
 
@@ -184,6 +221,7 @@ read_csv("/home/ezra/Documents/Data Science/working-in-teams/iris.csv") %>%
 ASK FOR AUDIENCE PARTICIPATION
 - all my packages are installed
 - I'm using R version 4.1.0 or later
+  - but at the same time, ggplot got fixed so it can work with R v4.1
 - iris.csv exists and it is in a specific place
 - iris.csv is tabular, and is in fact, a csv file (not some other kind of file that's mislabeled)
 - iris.csv has at least 3 columns, "Species", "Sepal.Length", "Sepal.Width"
@@ -252,9 +290,9 @@ setClass("CsvFileConnection", slots = c(path = "character"))
 You can also do inheritance here, say, you had a "FileConnection" superclass
 -->
 
-## Validity, Initializer and Constructors
+## Create a Validator function
 <!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
-```{r validity, echo = TRUE}
+```{r validity, echo = TRUE, results = FALSE}
 checkCsvFileConnection <- function(object) {
   errors <- c()
   if (!file.exists(object@path)) {
@@ -277,7 +315,7 @@ most of my validators start and end the same way
 What might be another useful thing to check for? Maybe, length of path == 1. Actually, I use that one a lot.
 -->
 
-## Need to define how to make a csv file connection still
+## Create a Constructor
 ```{r constructor, echo = TRUE}
 CsvFileConnection <- function(path) {
   new("CsvFileConnection", path = path)
@@ -287,6 +325,7 @@ CsvFileConnection <- function(path) {
 - Easy & straightforward, just use "new"
 - Constructor named the same as class
 - Don't use `new()` all over your code.
+- Also, there's an "initializer" (what happens when you call `new`)
 
 ## Define some methods
 ``` {r openmethod, echo = TRUE}
@@ -300,18 +339,21 @@ setMethod("open", "CsvFileConnection", function(con, ...) {
 })
 ```
 
+- two commented out generics
+  1. if there's no definition of function,
+  2. if there is but it's a non-generic function
 - defensive! will revert back to `read.csv` if `readr` isn't installed.
-- two commented out generics, 1st if there's no definition of function, 2nd if there is but it's a non-generic function
 
-## Generic and regular functions
 
-### generic
+## Generic and regular functions - Example of Generic
+
 ```{r generic-example, echo = TRUE}
 open
 ```
 <!-- plot is a good example too. Specifically an S3 generic not an S4 generic, but it should still work for our purposes-->
 
-### regular
+## Example of regular function
+
 ```{r regular-example, echo = TRUE}
 sapply
 ```
@@ -320,14 +362,23 @@ sapply
 ```{r testing, echo = TRUE}
 conn <- CsvFileConnection("iris.csv")
 dat <- open(conn)
+```
+
+## Testing! (2)
+```{r testing2, echo = TRUE}
 head(dat)
 ```
 
 ## Some errors?
-```{r errors, echo = TRUE, error = TRUE, tidy=TRUE, tidy.opts=list(width.cutoff=60)}
+```{r errors, echo = TRUE, error = TRUE, linewidth = 60, eval = FALSE}
 conn <- CsvFileConnection("notafile.csv")
 ```
 
+```{r errors_msg, echo = FALSE, linewidth = 60}
+conn <- tryCatch(CsvFileConnection("notafile.csv"),
+                 error = function(e) e)
+conn
+```
 ## How should we put this all together
 
 ### 1 file per class
@@ -354,4 +405,42 @@ dat %>%
   ggplot(aes(x = "Sepal.Length", y = "Sepal.Width")) + geom_point()
 ```
 
+## Bringing it all back
+- Classes bring reusable building blocks into your code
+  1. You can add an Excel file reader (new class, same generics)
+  2. You can add file write methods to these connection classes too
+- Additions don't interfere with already-existing code
+- Additions also don't mean starting from scratch
+
+<!-- Your code is tested- the last thing you want to do is break things by adding.
+- you're doing things right by building up code using building blocks
+- then you can use and reuse those building blocks
+-->
+
+
 # Questions?
+
+## Random info
+
+Link to this talk:
+https://github.com/minimenchmuncher/working-in-teams
+
+Distributed under CC0 license EXCEPT Iris data set
+
+Iris Data set:
+Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. *Annals of Eugenics*, **7**, Part II, 179–188.
+
+The data were collected by Anderson, Edgar (1935). The irises of the Gaspe Peninsula, *Bulletin of the American Iris Society*, **59**, 2–5.
+
+## Limitations of the S4 class system
+- It's verbose
+- lots of functions take strings as inputs, your code linter won't pick up if something is misspelled
+- It's not as flexible of a system as S3, where classes are more like tags
+- methods belong to generic functions not to the class itself <!-- more of just a reality -->
+  - your project might end up having a lot of generic functions!
+  - on the other hand, methods in R6 don't encourage you to think how your classes are alike
+  
+## Random dos and don'ts
+- don't use @ on an object outside of a class definition (which I like having one file per class)
+  - seriously, don't ever do it.
+- define getters and setters. `attr(data)` better than `data@attr`. `attr(data) <- expr` far better than `data@attr <- expr`; altering a slot may invalidate your class, whereas a setter you can always make sure to `checkValidity`

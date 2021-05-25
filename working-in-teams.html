@@ -232,10 +232,14 @@ We're programmers too-
 Web developers write code to create websites (JavaScript, TypeScript, python etc)
 App developers write code to create phone apps (Obj-C, Swift, Java)
 Game developers write code to create games (C++, etc)
-And we write code to create analyses (R, python)
+
+All of whom create layouts, content, backend storage, etc.
+
+And we write code to create analyses (R, python). And we should do the same things
+that they're doing.
 -->
 
-</article></slide><slide class=""><hgroup><h2>But how might we think?</h2></hgroup><article  id="but-how-might-we-think">
+</article></slide><slide class=""><hgroup><h2>How do we (data scientists) think?</h2></hgroup><article  id="how-do-we-data-scientists-think">
 
 <p>Our goals are</p>
 
@@ -299,7 +303,8 @@ And if you can't repeat what you got before, it's kind of useless.
 
 - small project means I can read and understand everything.
 - bigger project means I just can't, and your coworkers can't.
-  - BTW one of your coworkers you have to think about? It's you! Like- future you.
+  - at some point, need to have units of code that you can trust work properly.
+  - BTW, One of your coworkers you have to think about? It's you! Like- future you.
   - so even if you work "alone", you can't just program stuff that way!
 - Works for lots of small projects too- DRY
   - DRY means don't repeat the work of other people too!
@@ -315,9 +320,28 @@ And if you can't repeat what you got before, it's kind of useless.
 </ul>
 
 <!--
-Repeatable, reusable blocks of code, little black boxes that take inputs and spit out outputs
-Not going to spend a huge amount of time talking about why you should use functions
+Repeatable, reusable blocks of code, little black boxes that take inputs and spit out outputs.
+Take time to build your blocks. Then use and distibute them to your coworkers. Then everybody
+  is using the same blocks, you don't have competing sets of blocks, and the blocks you have
+  all work great.
+  
+You don't always need to know how the sausage is made - ie, every little detail about every line of code.
+  - Writing stuff as one big long script shows how the sausage gets made.
+  - Make the sausage, and then leave it be.
+Not going to spend a huge amount of time talking about functions, but I want to talk about
+classes, objects, and methods.
 -->
+
+</article></slide><slide class=""><hgroup><h2>Quick aside about lingo</h2></hgroup><article  id="quick-aside-about-lingo">
+
+<ul>
+<li><em>Object:</em> A structured grouping of data</li>
+<li><em>Class:</em> A template for creating these objects and defining their behavior</li>
+<li><em>Generic:</em> Specific type of function whose definition depends on how it was used</li>
+<li><em>Method:</em> An implementation of a Generic for a specific class.</li>
+</ul>
+
+<p><strong>This is all R-Specific</strong></p>
 
 </article></slide><slide class=""><hgroup><h2>Class systems in R</h2></hgroup><article  id="class-systems-in-r">
 
@@ -362,12 +386,12 @@ is just trying to create a SINGLE multi-use data type with a lot of methods, S3 
 
 <pre class = 'prettyprint lang-r'>suppressPackageStartupMessages(library(dplyr))
 suppressPackageStartupMessages(library(readr))
-suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ggplot2))
 
 ## just iris data set
-read_csv(&quot;/home/ezra/Documents/Data Science/working-in-teams/iris.csv&quot;) %&gt;%
-  filter(Species == &quot;setosa&quot;) %&gt;%
+read_csv(file.path(&quot;/home/ezra/Documents/Data Science&quot;,
+                   &quot;working-in-teams/iris.csv&quot;) |&gt;
+  filter(Species == &quot;setosa&quot;) |&gt;
   ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
 
 <h3>What did I presuppose?</h3>
@@ -376,6 +400,7 @@ read_csv(&quot;/home/ezra/Documents/Data Science/working-in-teams/iris.csv&quot;
 ASK FOR AUDIENCE PARTICIPATION
 - all my packages are installed
 - I'm using R version 4.1.0 or later
+  - but at the same time, ggplot got fixed so it can work with R v4.1
 - iris.csv exists and it is in a specific place
 - iris.csv is tabular, and is in fact, a csv file (not some other kind of file that's mislabeled)
 - iris.csv has at least 3 columns, "Species", "Sepal.Length", "Sepal.Width"
@@ -447,7 +472,7 @@ setClass(&quot;CsvFileConnection&quot;, slots = c(path = &quot;character&quot;))
 You can also do inheritance here, say, you had a "FileConnection" superclass
 -->
 
-</article></slide><slide class=""><hgroup><h2>Validity, Initializer and Constructors</h2></hgroup><article  id="validity-initializer-and-constructors">
+</article></slide><slide class=""><hgroup><h2>Create a Validator function</h2></hgroup><article  id="create-a-validator-function">
 
 <!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
 
@@ -465,13 +490,6 @@ You can also do inheritance here, say, you had a "FileConnection" superclass
 }
 setValidity(&quot;CsvFileConnection&quot;, checkCsvFileConnection)</pre>
 
-<pre >## Class &quot;CsvFileConnection&quot; [in &quot;.GlobalEnv&quot;]
-## 
-## Slots:
-##                 
-## Name:       path
-## Class: character</pre>
-
 <ul>
 <li>single input</li>
 <li>output = <code>TRUE</code> if validation passes, vector of errors if not <!--
@@ -480,7 +498,7 @@ What might be another useful thing to check for? Maybe, length of path == 1. Act
 --></li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>Need to define how to make a csv file connection still</h2></hgroup><article  id="need-to-define-how-to-make-a-csv-file-connection-still">
+</article></slide><slide class=""><hgroup><h2>Create a Constructor</h2></hgroup><article  id="create-a-constructor">
 
 <pre class = 'prettyprint lang-r'>CsvFileConnection &lt;- function(path) {
   new(&quot;CsvFileConnection&quot;, path = path)
@@ -490,6 +508,7 @@ What might be another useful thing to check for? Maybe, length of path == 1. Act
 <li>Easy &amp; straightforward, just use &ldquo;new&rdquo;</li>
 <li>Constructor named the same as class</li>
 <li>Don’t use <code>new()</code> all over your code.</li>
+<li>Also, there’s an &ldquo;initializer&rdquo; (what happens when you call <code>new</code>)</li>
 </ul>
 
 </article></slide><slide class=""><hgroup><h2>Define some methods</h2></hgroup><article  id="define-some-methods">
@@ -504,13 +523,16 @@ setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
 })</pre>
 
 <ul>
+<li>two commented out generics
+
+<ol>
+<li>if there’s no definition of function,</li>
+<li>if there is but it’s a non-generic function</li>
+</ol></li>
 <li>defensive! will revert back to <code>read.csv</code> if <code>readr</code> isn’t installed.</li>
-<li>two commented out generics, 1st if there’s no definition of function, 2nd if there is but it’s a non-generic function</li>
 </ul>
 
-</article></slide><slide class=""><hgroup><h2>Generic and regular functions</h2></hgroup><article  id="generic-and-regular-functions">
-
-<h3>generic</h3>
+</article></slide><slide class=""><hgroup><h2>Generic and regular functions - Example of Generic</h2></hgroup><article  id="generic-and-regular-functions---example-of-generic">
 
 <pre class = 'prettyprint lang-r'>open</pre>
 
@@ -518,13 +540,13 @@ setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
 ## 
 ## function (con, ...) 
 ## standardGeneric(&quot;open&quot;)
-## &lt;environment: 0x55b236c18120&gt;
+## &lt;environment: 0x5599a9ea5788&gt;
 ## Methods may be defined for arguments: con
 ## Use  showMethods(open)  for currently available ones.</pre>
 
 <!-- plot is a good example too. Specifically an S3 generic not an S4 generic, but it should still work for our purposes-->
 
-<h3>regular</h3>
+</article></slide><slide class=""><hgroup><h2>Example of regular function</h2></hgroup><article  id="example-of-regular-function">
 
 <pre class = 'prettyprint lang-r'>sapply</pre>
 
@@ -538,7 +560,7 @@ setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
 ##         simplify2array(answer, higher = (simplify == &quot;array&quot;))
 ##     else answer
 ## }
-## &lt;bytecode: 0x55b235c7ee30&gt;
+## &lt;bytecode: 0x5599a8f0de30&gt;
 ## &lt;environment: namespace:base&gt;</pre>
 
 </article></slide><slide class=""><hgroup><h2>Testing!</h2></hgroup><article  id="testing">
@@ -556,6 +578,8 @@ dat &lt;- open(conn)</pre>
 ##   Species = col_character()
 ## )</pre>
 
+</article></slide><slide class=""><hgroup><h2>Testing! (2)</h2></hgroup><article  id="testing-2">
+
 <pre class = 'prettyprint lang-r'>head(dat)</pre>
 
 <pre >## # A tibble: 6 x 5
@@ -572,7 +596,8 @@ dat &lt;- open(conn)</pre>
 
 <pre class = 'prettyprint lang-r'>conn &lt;- CsvFileConnection(&quot;notafile.csv&quot;)</pre>
 
-<pre >## Error in validObject(.Object): invalid class &quot;CsvFileConnection&quot; object: Input File Doesn&#39;t exist!</pre>
+<pre >## &lt;simpleError in validObject(.Object): invalid class
+&quot;CsvFileConnection&quot; object: Input File Doesn&#39;t exist!&gt;</pre>
 
 </article></slide><slide class=""><hgroup><h2>How should we put this all together</h2></hgroup><article  id="how-should-we-put-this-all-together">
 
@@ -603,7 +628,60 @@ dat %&gt;%
   filter(Species == &quot;setosa&quot;) %&gt;%
   ggplot(aes(x = &quot;Sepal.Length&quot;, y = &quot;Sepal.Width&quot;)) + geom_point()</pre>
 
-</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Questions?</h2></hgroup><article  id="questions"></article></slide>
+</article></slide><slide class=""><hgroup><h2>Bringing it all back</h2></hgroup><article  id="bringing-it-all-back">
+
+<ul>
+<li>Classes bring reusable building blocks into your code
+
+<ol>
+<li>You can add an Excel file reader (new class, same generics)</li>
+<li>You can add file write methods to these connection classes too</li>
+</ol></li>
+<li>Additions don’t interfere with already-existing code</li>
+<li>Additions also don’t mean starting from scratch</li>
+</ul>
+
+<!-- Your code is tested- the last thing you want to do is break things by adding.
+- you're doing things right by building up code using building blocks
+- then you can use and reuse those building blocks
+-->
+
+</article></slide><slide class="segue dark nobackground level1"><hgroup class = 'auto-fadein'><h2>Questions?</h2></hgroup><article  id="questions">
+
+</article></slide><slide class=""><hgroup><h2>Random info</h2></hgroup><article  id="random-info">
+
+<p>Link to this talk: <a href='https://github.com/minimenchmuncher/working-in-teams' title=''>https://github.com/minimenchmuncher/working-in-teams</a></p>
+
+<p>Distributed under CC0 license EXCEPT Iris data set</p>
+
+<p>Iris Data set: Fisher, R. A. (1936) The use of multiple measurements in taxonomic problems. <em>Annals of Eugenics</em>, <strong>7</strong>, Part II, 179–188.</p>
+
+<p>The data were collected by Anderson, Edgar (1935). The irises of the Gaspe Peninsula, <em>Bulletin of the American Iris Society</em>, <strong>59</strong>, 2–5.</p>
+
+</article></slide><slide class=""><hgroup><h2>Limitations of the S4 class system</h2></hgroup><article  id="limitations-of-the-s4-class-system">
+
+<ul>
+<li>It’s verbose</li>
+<li>lots of functions take strings as inputs, your code linter won’t pick up if something is misspelled</li>
+<li>It’s not as flexible of a system as S3, where classes are more like tags</li>
+<li>methods belong to generic functions not to the class itself <!-- more of just a reality -->
+
+<ul>
+<li>your project might end up having a lot of generic functions!</li>
+<li>on the other hand, methods in R6 don’t encourage you to think how your classes are alike</li>
+</ul></li>
+</ul>
+
+</article></slide><slide class=""><hgroup><h2>Random dos and don’ts</h2></hgroup><article  id="random-dos-and-donts">
+
+<ul>
+<li>don’t use @ on an object outside of a class definition (which I like having one file per class)
+
+<ul>
+<li>seriously, don’t ever do it.</li>
+</ul></li>
+<li>define getters and setters. <code>attr(data)</code> better than <code>data@attr</code>. <code>attr(data) &lt;- expr</code> far better than <code>data@attr &lt;- expr</code>; altering a slot may invalidate your class, whereas a setter you can always make sure to <code>checkValidity</code></li>
+</ul></article></slide>
 
 
   <slide class="backdrop"></slide>
