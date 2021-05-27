@@ -472,9 +472,9 @@ setClass(&quot;CsvFileConnection&quot;, slots = c(path = &quot;character&quot;))
 You can also do inheritance here, say, you had a "FileConnection" superclass
 -->
 
-</article></slide><slide class=""><hgroup><h2>Create a Validator function</h2></hgroup><article  id="create-a-validator-function">
+</article></slide><slide class=""><hgroup><h2>Create a Inspector function</h2></hgroup><article  id="create-a-inspector-function">
 
-<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
+<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class inspector or validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
 
 <pre class = 'prettyprint lang-r'>checkCsvFileConnection &lt;- function(object) {
   errors &lt;- c()
@@ -540,7 +540,7 @@ setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
 ## 
 ## function (con, ...) 
 ## standardGeneric(&quot;open&quot;)
-## &lt;environment: 0x5599a9ea5788&gt;
+## &lt;environment: 0x561ba6ef7788&gt;
 ## Methods may be defined for arguments: con
 ## Use  showMethods(open)  for currently available ones.</pre>
 
@@ -560,7 +560,7 @@ setMethod(&quot;open&quot;, &quot;CsvFileConnection&quot;, function(con, ...) {
 ##         simplify2array(answer, higher = (simplify == &quot;array&quot;))
 ##     else answer
 ## }
-## &lt;bytecode: 0x5599a8f0de30&gt;
+## &lt;bytecode: 0x561ba5f5fe30&gt;
 ## &lt;environment: namespace:base&gt;</pre>
 
 </article></slide><slide class=""><hgroup><h2>Testing!</h2></hgroup><article  id="testing">
@@ -601,7 +601,7 @@ dat &lt;- open(conn)</pre>
 
 </article></slide><slide class=""><hgroup><h2>How should we put this all together</h2></hgroup><article  id="how-should-we-put-this-all-together">
 
-<h3>1 file per class</h3>
+<h3>One file per class</h3>
 
 <ol>
 <li><code>checkCsvFileConnection()</code> first</li>

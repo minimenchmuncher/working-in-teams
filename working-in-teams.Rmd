@@ -290,8 +290,8 @@ setClass("CsvFileConnection", slots = c(path = "character"))
 You can also do inheritance here, say, you had a "FileConnection" superclass
 -->
 
-## Create a Validator function
-<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
+## Create a Inspector function
+<!-- How do I make one of these? Not going to bother defining a custom initializer, the default one will be fine. Creating a custom class inspector or validator is a nice way to make sure you can't make "illegal" objects, here for example, say the file must exist -->
 ```{r validity, echo = TRUE, results = FALSE}
 checkCsvFileConnection <- function(object) {
   errors <- c()
@@ -381,7 +381,7 @@ conn
 ```
 ## How should we put this all together
 
-### 1 file per class
+### One file per class
   1. `checkCsvFileConnection()` first
   2. `setClass()`  - defines the class
   3. `setValidity()`  - sets the validity
